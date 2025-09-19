@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cœur d'Acier - Final Project</title>
+    <!-- Google Fonts: Poppins for a modern, clean look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0c0c0c;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 960px;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .seat {
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: #333;
+            border-radius: 0.25rem;
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .seat:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+        .seat.selected {
+            background-color: #6ee7b7 !important;
+            color: #000 !important;
+            transform: scale(1.1);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(110, 231, 183, 0.5);
+        }
+        @keyframes popIn {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1.1); }
+        }
+        #tooltip {
+            position: absolute;
+            background-color: #262626;
+            color: #e5e5e5;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            display: none;
+            max-width: 300px;
+            pointer-events: none;
+        }
+        .no-admittance {
+            background-color: #b91c1c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-align: center;
+            margin-top: 1rem;
+            border: 2px solid #525252;
+            transform: rotate(-3deg);
+            box-shadow: 0 4px 15px rgba(185, 28, 28, 0.4);
+        }
+        /* New section for checkout and confirmation screens */
+        .page-content {
+            display: none;
+        }
+        .page-content.active {
+            display: block;
+        }
+        .map-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 50%; /* Aspect ratio 2:1 */
+            height: 0;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .map-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+        }
+        .map-container map area {
+            cursor: pointer;
+            /* For debugging: outline: 2px solid red; outline-offset: -5px; */
+        }
+        #map-description {
+            display: none;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div class="min-h-screen flex flex-col items-center">
+        <!-- Header and Navigation -->
+        <header class="w-full bg-gray-800 shadow-lg py-4 fixed top-0 z-50">
+            <div class="container mx-auto flex flex-col md:flex-row items-center justify-between px-4">
+                <h1 class="text-4xl font-extrabold text-gray-300">Cœur d'Acier</h1>
+                <nav class="mt-4 md:mt-0 space-x-2 md:space-x-4 flex flex-wrap justify-center">
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="home">Home</a>
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="bandmembers">Band Members</a>
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="songs">Music & Discography</a>
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="tour">Tour</a>
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="tickets">Tickets</a>
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="merch">Merch</a>
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="security">Security</a>
+                    <a href="#" class="tab-link px-4 py-2 rounded-full font-medium transition-colors hover:bg-gray-700 text-gray-400" data-tab="backlash">Critic's Corner</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="container mx-auto mt-28 mb-12 p-6 bg-gray-800 rounded-2xl shadow-xl space-y-8 page-content active">
+            <!-- Home Tab Content -->
+            <section id="home" class="tab-content active p-6">
+                <div class="text-center space-y-6">
+                    <!-- Updated image source to your local file -->
+                    <img src="logo.jpg" alt="Cœur d'Acier Band Logo" class="w-2/3 mx-auto rounded-xl shadow-lg">
+                    <p class="text-lg leading-relaxed text-gray-300">
+                        Welcome to the official website of Coeur d 'acier. Get ready for our biggest tour yet!
+                    </p>
+                </div>
+                <!-- Dashed Line Separator -->
+                <hr class="border-t-2 border-dashed border-gray-600 my-8">
+                <!-- Sponsorships -->
+                <div>
+                    <h2 class="text-3xl font-bold mb-4 text-gray-300 text-center"> Big Thanks to our Sponsors</h2>
+                    <ul class="list-disc list-inside space-y-2 text-gray-300 pl-4">
+                        <li><a href="#" class="text-blue-400 hover:underline">Solis Galerie - The Sun King</a></li>
+                        <li><a href="#" class="text-blue-400 hover:underline">The Valois Institute</a></l>
+                    </ul>
+                </div>
+                <!-- Dashed Line Separator -->
+                <hr class="border-t-2 border-dashed border-gray-600 my-8">
+                <!-- Opening Act -->
+                <div>
+                    <h2 class="text-3xl font-bold mb-4 text-gray-300 text-center">Opening Act</h2>
+                    <div class="bg-gray-700 p-6 rounded-2xl shadow-inner text-center">
+                        <h3 class="text-2xl font-bold text-gray-200">Beyond the M A R Q U E</h3>
+                        <p class="mt-2 text-gray-300">Beyond the M A R Q U E is inspired by French cartography. The name symbolizes the desire to explore uncharted territory, both on maps and in music, pushing past boundaries to find a unique sound. They will be joining us for our Sun tour.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Band Members Tab Content -->
+            <section id="bandmembers" class="tab-content p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-300 text-center">Meet the Band</h2>
+                <hr class="border-t-2 border-dashed border-gray-600 my-8">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Band Member 1 -->
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner text-center">
+                        <img src="https://placehold.co/200x200/525252/d4d4d4?text=HENRYV4LOR" alt="HENRYV4LOR" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-200">HENRYV4LOR</h3>
+                        <p class="text-lg text-amber-500">Lead Singer</p>
+                        <p class="mt-2 text-gray-300">The lead singer's name, HENRYV4LOR, reflects the unifying diplomacy and strength of King Henry IV. His powerful voice brings together different musical styles, just as the king brought peace and stability to France.</p>
+                    </div>
+                    <!-- Band Member 2 -->
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner text-center">
+                        <img src="https://placehold.co/200x200/525252/d4d4d4?text=Henri+Turrenado" alt="Henri Turrenado" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-200">Henri Turrenado</h3>
+                        <p class="text-lg text-amber-500">Guitarist</p>
+                        <p class="mt-2 text-gray-300">Henri Turrenado's strategic guitar solos mirror the military genius of his namesake, the French commander. His incredible skill helps the band achieve victory on every stage, establishing their dominance in the music world.</p>
+                    </div>
+                    <!-- Band Member 3 -->
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner text-center">
+                        <img src="https://placehold.co/200x200/525252/d4d4d4?text=Sammie+Wammie" alt="Sammie Wammie" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-200">Sammie Wammie</h3>
+                        <p class="text-lg text-amber-500">Bassist</p>
+                        <p class="mt-2 text-gray-300">Sammie Wammie, the band's bassist, is a musical trailblazer. His innovative basslines explore new musical territories, much like the French explorer who charted new lands and founded Quebec in North America.</p>
+                    </div>
+                    <!-- Band Member 4 -->
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner text-center">
+                        <img src="https://placehold.co/200x200/525252/d4d4d4?text=L’Ombrequill" alt="L’Ombrequill" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-200">L’Ombrequill</h3>
+                        <p class="text-lg text-amber-500">Playwright/Lyricist</p>
+                        <p class="mt-2 text-gray-300">The band's lyricist, L’Ombrequill, crafts witty and satirical songs. Like the playwright Molière, his words use humor to critique society, giving the band a unique and intelligent voice.</p>
+                    </div>
+                     <!-- Band Member 5 -->
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner text-center">
+                        <img src="https://placehold.co/200x200/525252/d4d4d4?text=Spyder+XI" alt="Spyder XI" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover shadow-lg">
+                        <h3 class="text-2xl font-bold text-gray-200">Spyder XI</h3>
+                        <p class="mt-2 text-gray-300">Spyder XI's powerful and unifying drum beats hold the band together. His style is inspired by King Louis XI, who built a powerful monarchy and unified France after years of conflict.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Music & Discography Tab Content -->
+            <section id="songs" class="tab-content p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-300 text-center">Music & Discography</h2>
+                <hr class="border-t-2 border-dashed border-gray-600 my-8">
+                <div class="mt-8 space-y-8">
+                    <!-- Song Tracks -->
+                    <div class="space-y-2">
+                        <h3 class="text-2xl font-semibold text-gray-200">Song Tracks</h3>
+                        <ul class="list-decimal list-inside space-y-1 text-gray-300">
+                            <li>French Calling</li>
+                            <li>France Will Never Hurt You</li>
+                            <li>Welcome to Colonize</li>
+                            <li>Portuguese Idiot</li>
+                            <li>God Kill the King</li>
+                            <li>Amster-damned</li>
+                            <li>Silver-Lined Coffin</li>
+                        </ul>
+                    </div>
+                    <!-- Song Explanations -->
+                    <div class="space-y-6">
+                        <h3 class="text-2xl font-semibold text-gray-200 mt-8">Song Explanations</h3>
+                        <div class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">French Calling</h4>
+                            <p class="text-gray-300 leading-relaxed">This song is about France's economic drive to expand its empire. It focuses on the fur trade in North America, highlighting how exploration and alliances with Native groups helped France gain wealth and power.</p>
+                        </div>
+                        <div class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">France Will Never Hurt You</h4>
+                            <p class="text-gray-300 leading-relaxed">This song explores France's political position among European powers and its efforts to resist domination by rivals like Britain and Spain. It shows how France built colonies to maintain its own identity and power.</p>
+                        </div>
+                        <div class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">Welcome to Colonize</h4>
+                            <p class="text-gray-300 leading-relaxed">This song is about the French Empire's use of colonies for both economic and religious purposes. It highlights the profits from Caribbean sugar plantations and the spread of Christianity in New France, showing the mix of economic gain and cultural control.</p>
+                        </div>
+                        <div class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">Portuguese Idiot</h4>
+                            <p class="text-gray-300 leading-relaxed">This song parodies 'American Idiot' to critique Portugal's economic over-reliance on its colonies' wealth. It mocks how they failed to anticipate competition in the spice trade, which led to their eventual downfall as an empire.</p>
+                        </div>
+                        <div class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">God Kill the King</h4>
+                            <p class="text-gray-300 leading-relaxed">A parody of Britain's national anthem, this song criticizes the British monarchy's abuse of power and exploitative practices. It highlights how giving the East India Company immense power led to forced taxation and injustice in the colonies.</p>
+                        </div>
+                        <div class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">Amster-damned</h4>
+                            <p class="text-gray-300 leading-relaxed">This song critiques the Netherlands' immense wealth, gained through the brutal practices of the Dutch East India Company. It refers to the Banda Islands massacre, suggesting that Amsterdam was "damned" by its greed for control over the spice trade.</p>
+                        </div>
+                        <div class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">Silver-Lined Coffin</h4>
+                            <p class="text-gray-300 leading-relaxed">This song criticizes the Spanish Empire's reliance on silver, which led to the exploitation of indigenous populations in the Americas. It argues that silver was a curse that caused economic problems like hyperinflation, ultimately contributing to Spain's downfall.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tour Tab Content -->
+            <section id="tour" class="tab-content p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-300 text-center">Tour Locations & Dates</h2>
+                
+                <!-- Map Container -->
+                <div class="map-container mb-6">
+                    <!-- Image of a simple, modern world map -->
+                    <img src="map.jpg" alt="Tour Map" usemap="#tourmap">
+                    <map name="tourmap">
+                        <!-- Coordinates are approximate for a generic map -->
+                        <area shape="rect" coords="110, 80, 200, 150" alt="Quebec" href="#" data-location="quebec">
+                        <area shape="circle" coords="270, 240, 25" alt="Saint-Domingue" href="#" data-location="saint-domingue">
+                        <area shape="rect" coords="440, 200, 520, 270" alt="Algeria" href="#" data-location="algeria">
+                    </map>
+                </div>
+                <!-- Map Description Section -->
+                <div id="map-description" class="bg-gray-700 p-6 rounded-2xl shadow-inner">
+                    <!-- Content will be injected here by JavaScript -->
+                </div>
+
+                <!-- Dashed Line Separator -->
+                <hr class="border-t-2 border-dashed border-gray-600 my-8">
+                <!-- Tour Dates and Locations -->
+                <div class="space-y-4">
+                    <h3 class="text-2xl font-semibold text-gray-200">Upcoming Shows</h3>
+                    <ul class="space-y-4">
+                        <!-- Historical tour dates -->
+                        <li class="p-4 bg-gray-700 rounded-lg shadow-md flex justify-between items-center flex-wrap">
+                            <div class="flex-1 min-w-0">
+                                <span class="text-lg font-bold text-amber-500">November 12, 1598</span>
+                                <span class="block text-gray-300">Quebec, Canada</span>
+                            </div>
+                            <a href="#tickets" class="tab-link mt-2 md:mt-0 px-6 py-2 bg-gray-600 text-gray-100 rounded-full font-semibold transition-transform hover:scale-105" data-tab="tickets">Tickets</a>
+                        </li>
+                        <li class="p-4 bg-gray-700 rounded-lg shadow-md flex justify-between items-center flex-wrap">
+                            <div class="flex-1 min-w-0">
+                                <span class="text-lg font-bold text-amber-500">February 20, 1608</span>
+                                <span class="block text-gray-300">Saint-Domingue, Dominican Republic</span>
+                            </div>
+                            <a href="#tickets" class="tab-link mt-2 md:mt-0 px-6 py-2 bg-gray-600 text-gray-100 rounded-full font-semibold transition-transform hover:scale-105" data-tab="tickets">Tickets</a>
+                        </li>
+                        <li class="p-4 bg-gray-700 rounded-lg shadow-md flex justify-between items-center flex-wrap">
+                            <div class="flex-1 min-w-0">
+                                <span class="text-lg font-bold text-amber-500">April 5, 1661</span>
+                                <span class="block text-gray-300">Pondicherry, India</span>
+                            </div>
+                            <a href="#tickets" class="tab-link mt-2 md:mt-0 px-6 py-2 bg-gray-600 text-gray-100 rounded-full font-semibold transition-transform hover:scale-105" data-tab="tickets">Tickets</a>
+                        </li>
+                        <li class="p-4 bg-gray-700 rounded-lg shadow-md flex justify-between items-center flex-wrap">
+                            <div class="flex-1 min-w-0">
+                                <span class="text-lg font-bold text-amber-500">August 15, 1713</span>
+                                <span class="block text-gray-300">Quebec, Canada</span>
+                            </div>
+                            <a href="#tickets" class="tab-link mt-2 md:mt-0 px-6 py-2 bg-gray-600 text-gray-100 rounded-full font-semibold transition-transform hover:scale-105" data-tab="tickets">Tickets</a>
+                        </li>
+                        <li class="p-4 bg-gray-700 rounded-lg shadow-md flex justify-between items-center flex-wrap">
+                            <div class="flex-1 min-w-0">
+                                <span class="text-lg font-bold text-amber-500">September 1, 1756</span>
+                                <span class="block text-gray-300">Saint-Domingue, Dominican Republic</span>
+                            </div>
+                            <a href="#tickets" class="tab-link mt-2 md:mt-0 px-6 py-2 bg-gray-600 text-gray-100 rounded-full font-semibold transition-transform hover:scale-105" data-tab="tickets">Tickets</a>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Tickets Tab Content -->
+            <section id="tickets" class="tab-content p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-300 text-center">Seating Chart & Social Hierarchy</h2>
+                <div class="space-y-6">
+                    <!-- Stage Area -->
+                    <div class="w-full h-16 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg shadow-lg flex items-center justify-center text-gray-200 font-bold text-xl mb-8">
+                        The Stage
+                    </div>
+                    
+                    <!-- VIP Box -->
+                    <div class="flex flex-col items-center bg-gray-700 p-4 rounded-xl shadow-inner w-full sm:w-2/3 md:w-1/2 mx-auto space-y-2">
+                        <div class="text-center font-bold text-lg text-gray-300">VIP Box</div>
+                        <div id="vip-box" class="flex flex-row space-x-2 justify-center">
+                            <!-- VIP seats will be generated here -->
+                        </div>
+                    </div>
+
+                    <!-- Seating Diagram Container (Pyramid) -->
+                    <div id="seating-chart" class="w-full flex flex-col items-center space-y-4 p-4 bg-gray-700 rounded-2xl shadow-inner">
+                        <!-- Other seating sections will be generated here by JavaScript -->
+                    </div>
+                    
+                    <!-- No Admittance Sign -->
+                    <div class="no-admittance mx-auto">
+                        NO ADMITTANCE
+                    </div>
+
+                    <div class="text-center text-sm text-gray-400 mt-4 max-w-lg mx-auto">
+                        The "NO ADMITTANCE" sign symbolizes the strict social barriers that existed in the French Empire, where moving between classes was almost impossible. It's a reminder that not everyone had equal access or opportunity.
+                    </div>
+
+                    <!-- Cart Section -->
+                    <div class="bg-gray-700 p-6 rounded-2xl shadow-inner space-y-4">
+                        <h3 class="text-2xl font-bold text-gray-200">Your Cart</h3>
+                        <div id="cart-container" class="space-y-2 text-gray-300">
+                            <p id="empty-cart-message">Your cart is empty. Click on a seat to add a ticket.</p>
+                        </div>
+                        <hr class="border-t border-dashed border-gray-600">
+                        <div class="flex justify-between items-center text-xl font-bold text-gray-200">
+                            <span>Total:</span>
+                            <span id="total-price">$0</span>
+                        </div>
+                        <button id="checkout-button" class="w-full py-4 bg-gray-600 text-gray-100 rounded-full font-extrabold text-xl shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            BUY TICKETS NOW
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Merch Tab Content -->
+            <section id="merch" class="tab-content p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-300 text-center">Official Merchandise</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Merch Item 1 -->
+                    <div class="bg-gray-700 rounded-2xl overflow-hidden shadow-lg transform transition-transform hover:scale-105">
+                        <img src="hoodie.png" alt="Beaver Fur Hoodie" class="w-full h-48 object-cover">
+                        <div class="p-4 text-center">
+                            <h3 class="text-lg font-semibold text-gray-200">Official Tour Hoodie</h3>
+                            <p class="text-gray-400 mt-1">This hoodie symbolizes the French fur trade, a key part of their empire's economy. It represents the interaction with the environment and the cultural connection formed with Native Americans who were vital to the trade.</p>
+                            <button class="mt-4 w-full py-2 bg-gray-600 text-gray-100 rounded-full font-semibold hover:bg-gray-500">Add to Cart</button>
+                        </div>
+                    </div>
+                    <!-- Merch Item 2 -->
+                    <div class="bg-gray-700 rounded-2xl overflow-hidden shadow-lg transform transition-transform hover:scale-105">
+                        <img src="image.png" alt="Heart of Steel Necklace" class="w-full h-48 object-cover">
+                        <div class="p-4 text-center">
+                            <h3 class="text-lg font-semibold text-gray-200">Heart of Steel Necklace</h3>
+                            <p class="text-gray-400 mt-1">This necklace, shaped like a heart of steel with wings and chains, is inspired by the band's name. It represents France's technological advancements in metallurgy, its cooperative relationships with Native Americans, and the struggles of empire-building.</p>
+                            <button class="mt-4 w-full py-2 bg-gray-600 text-gray-100 rounded-full font-semibold hover:bg-gray-500">Add to Cart</button>
+                        </div>
+                 
+        
+                
+    
+                </div>
+            </section>
+
+            <!-- Security Tab Content -->
+            <section id="security" class="tab-content p-6">
+                <h2 class="text-3xl font-bold mb-6 text-red-400 text-center">Security & Policies</h2>
+                <div class="space-y-8">
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner space-y-4">
+                        <h3 class="text-2xl font-bold text-gray-200">The French Musketeers</h3>
+                        <p class="text-gray-300">
+                            Our security would be handled by the French Musketeers, elite guards who protected the French monarchy. They represent both the political power of the king and the advanced technology of France’s metallurgy industry, with their muskets, rapiers, and steel armor. Their strength reflects the band's name, "Cœur d'acier" or "Heart of Steel," symbolizing a tough and resilient core.
+                        </p>
+                    </div>
+
+                    <hr class="border-t-2 border-dashed border-gray-600">
+
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner space-y-4">
+                        <h3 class="text-xl font-bold text-gray-200">Internal Security</h3>
+                        <p class="text-gray-300">
+                            Our security team would have to manage tensions between colonists, traders, and Native American allies to prevent uprisings and maintain order. The fur trade also created competition, so the team would need to monitor social relationships and protect economic interests. Their role was to ensure stability and loyalty to the crown within the colonies.
+                        </p>
+                    </div>
+
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner space-y-4">
+                        <h3 class="text-xl font-bold text-gray-200">External Security</h3>
+                        <p class="text-gray-300">
+                            The security team would have to defend French territories from rival European powers like England and Spain, who sought control of their lands and waterways. They would also overcome environmental challenges like harsh winters, rugged terrain, and diseases that threatened settlements. Their primary job was to protect the empire's economic lifeline and alliances from outside threats.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Backlash Tab Content -->
+            <section id="backlash" class="tab-content p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-300 text-center">Critic's Corner & Social Media Backlash</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Social Media Backlash -->
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner space-y-6">
+                        <h3 class="text-2xl font-semibold text-gray-200 mb-4">Recent Social Media Chatter</h3>
+                        <div class="space-y-4">
+                            <!-- Mock Tweet 1 -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow">
+                                <div class="flex items-center mb-2">
+                                
+        
+                                <video src="Fightback.mp4" controls></video>
+                            </div>
+                            <!-- Mock Tweet 2 -->
+                            <div class="bg-gray-800 p-4 rounded-lg shadow">
+                                <div class="flex items-center mb-2">
+                                    <span class="font-bold text-gray-100">@OfficalBanda</span>
+                                    <span class="text-gray-400 text-sm ml-2">5h ago</span>
+                                </div>
+                                <p class="text-gray-300"> We originally planned not to post this. But now, the Dutch have gone too far. 
+
+Everyone knows about the Dutch empire and their “Dutch East India Company (VOC)”. They are the center of the spice trade with control over many of the world’s most valuable spices. One would think they would be satisfied with what they have achieved but the Dutch know no limits when it comes to greed. 
+
+There is only one place in the world where nutmeg, a valuable spice worth more than gold, is found: our islands, the Banda Islands. We have always practiced free trade, selling our nutmeg to various different merchants, something that clashed with the VOC’s desire for a complete spice monopoly. They desire full and sole control over our nutmeg, with exclusive rights and low prices. 
+
+When we denied them, they tried to force us to sign treaties under the threat of their military. Though we felt uneasy about this, we hoped this would all pass and tried to not make a big deal of it. That is until they attacked our islands with a fleet of 19 ships and nearly 2,000 European and Japanese mercenary troops. 
+
+They attacked and executed 44 of our orang kaya, our leaders. They killed thousands of people, including our women and children. There used to be 15,000 of us and now our numbers are down to only 1,000. We are the survivors and we will avenge our brothers and sisters.
+
+We tried to be patient but this time, they have gone too far. They have murdered our people, our children, our leaders. We will no longer stay silent and stand by watching the Dutch’s brutality. There will come a day when the Dutch’s greed will be their downfall. And when it happens, the world will remember the injustice carried out on the Banda Islands. #THETRUTH</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dashed Line Separator (for mobile view) -->
+                    <hr class="md:hidden border-t-2 border-dashed border-gray-600 my-8">
+
+                    <!-- Critic Review -->
+                    <div class="p-6 bg-gray-700 rounded-2xl shadow-inner">
+                        <h3 class="text-2xl font-semibold text-gray-200 mb-4">Critic's Review</h3>
+                        <div class="bg-gray-800 p-4 rounded-lg shadow">
+                            <h4 class="text-xl font-bold text-amber-500 mb-2">"Coeur d’Acier: Flop or Bop?</h4>
+                            <p class="text-gray-300 italic">
+                                "Coeur d’Acier, a promising French band, traces its origins after the Edict of Nantes was passed in France, ending internal religious wars that had been happening for nearly forty years, presenting the band the perfect time to officially debut into the world. They officially debuted into the world with their first ever major concert in Quebec, which became the center for Coeur d’Acier’s growing fanbase (first successful French settlement/center of fur trade - economic). The band immediately went viral for treating their fans in the Americas considerably better compared to the other bands active at the time, emphasizing the importance of their connection with their fans (relations with the indigenous people - social). With a steadily growing fanbase, it wasn’t long before Coeur d’Acier was considered one of the biggest boy bands in the world. However, right in the middle of the band’s Golden Age, rumors started spreading about discord within the group. The band’s lead singer, the Sun King, was accused of “taking over” the band, believing that just because his gallery, Solis Galerie, was one of the biggest sponsors of the group, he had absolute control over the band and its activities (Louis XIV’s absolutism - political). This controversy ended up splitting the fanbase, with some fans even leaving and joining the fanbase of a new British group that was booming in popularity, despite the late start. Unfortunately, this only marked the beginning of the band’s downfall, with the band losing more and more fans to their British rival. Only time will be able to tell whether Coeur d’Acier will return to their original glory or if this is the end of the band’s reign."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Checkout Screen -->
+        <div id="checkout-page" class="container mx-auto mt-28 mb-12 p-8 bg-gray-800 rounded-2xl shadow-xl page-content">
+            <h2 class="text-3xl font-bold mb-6 text-gray-300 text-center">Checkout</h2>
+            <div class="bg-gray-700 p-6 rounded-2xl shadow-inner space-y-4">
+                <div class="space-y-2">
+                    <h3 class="text-xl font-semibold text-gray-200">Order Summary</h3>
+                    <div id="checkout-summary" class="text-gray-300"></div>
+                </div>
+                <hr class="border-t border-dashed border-gray-600">
+                <form id="payment-form" class="space-y-4">
+                    <div>
+                        <label for="card-number" class="block text-gray-300 text-sm font-semibold mb-1">Card Number</label>
+                        <input type="text" id="card-number" class="w-full px-4 py-2 rounded-lg bg-gray-900 text-gray-200 border border-gray-700 focus:outline-none focus:border-gray-500" placeholder="0000 0000 0000 0000">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="expiration" class="block text-gray-300 text-sm font-semibold mb-1">Expiration Date</label>
+                            <input type="text" id="expiration" class="w-full px-4 py-2 rounded-lg bg-gray-900 text-gray-200 border border-gray-700 focus:outline-none focus:border-gray-500" placeholder="MM/YY">
+                        </div>
+                        <div>
+                            <label for="cvv" class="block text-gray-300 text-sm font-semibold mb-1">CVV</label>
+                            <input type="text" id="cvv" class="w-full px-4 py-2 rounded-lg bg-gray-900 text-gray-200 border border-gray-700 focus:outline-none focus:border-gray-500" placeholder="123">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-4 bg-gray-600 text-gray-100 rounded-full font-extrabold text-xl shadow-lg transition-transform hover:scale-105">
+                        SUBMIT PAYMENT
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Confirmation Screen -->
+        <div id="confirmation-page" class="container mx-auto mt-28 mb-12 p-8 bg-gray-800 rounded-2xl shadow-xl text-center page-content">
+            <h2 class="text-3xl font-bold mb-6 text-gray-300">Purchase Complete!</h2>
+            <div class="p-6 bg-gray-700 rounded-2xl shadow-inner space-y-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <p class="text-xl text-gray-300">Thank you for your purchase!</p>
+                <p class="text-gray-400">Your tickets have been sent to your email.</p>
+                <button id="back-to-home" class="mt-4 py-2 px-6 bg-gray-600 text-gray-100 rounded-full font-semibold transition-transform hover:scale-105">
+                    Back to Home
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="tooltip"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.tab-link');
+            const mainContent = document.getElementById('main-content');
+            const checkoutPage = document.getElementById('checkout-page');
+            const confirmationPage = document.getElementById('confirmation-page');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const vipBox = document.getElementById('vip-box');
+            const seatingChart = document.getElementById('seating-chart');
+            const tooltip = document.getElementById('tooltip');
+            const cartContainer = document.getElementById('cart-container');
+            const totalPriceElement = document.getElementById('total-price');
+            const emptyCartMessage = document.getElementById('empty-cart-message');
+            const checkoutButton = document.getElementById('checkout-button');
+            const paymentForm = document.getElementById('payment-form');
+            const checkoutSummary = document.getElementById('checkout-summary');
+            const backToHomeButton = document.getElementById('back-to-home');
+            const mapDescriptions = document.querySelectorAll('map area');
+            const mapDescriptionContainer = document.getElementById('map-description');
+
+            let selectedTickets = [];
+
+            // Map of seat sections to their prices and explanations
+            const seatInfo = {
+                vip: {
+                    price: 250,
+                    explanation: "This elite section is for the monarch, symbolizing the king's centralized power and authority. Historically, religious leaders were also here, but King Louis XIV's changes moved them to the front row.",
+                    color: 'bg-amber-600'
+                },
+                frontRow: {
+                    price: 150,
+                    explanation: "These seats are for those who brought wealth and discovery to the empire, including explorers and profitable sugar plantation owners. The Church is also in this section, reflecting the monarch's growing authority.",
+                    color: 'bg-red-600'
+                },
+                general: {
+                    price: 75,
+                    explanation: "This section is for the hardworking backbone of the empire, including merchants and soldiers. Their vital roles in the economy and colonial stability earn them a solid place at the show.",
+                    color: 'bg-blue-600'
+                },
+                nosebleeds: {
+                    price: 40,
+                    explanation: "These highest seats are for those at the bottom of the social hierarchy, like Natives and indentured servants. Their low position reflects their status, even though they were important contributors to the fur trade.",
+                    color: 'bg-gray-500'
+                }
+            };
+            
+            const locationDescriptions = {
+                quebec: {
+                    title: "Quebec",
+                    text: "Quebec was France’s first successful settlement, helping strengthen France's claim to North American territories against other European powers and aided with the expansion of France into North America. It was the center of fur trade, which became the main economic driver of New France. It also allowed France to control a highly strategic location along the St. Lawrence River, not only aiding with trade but with defense as well."
+                },
+                "saint-domingue": {
+                    title: "Saint-Domingue",
+                    text: "Saint-Domingue was France’s wealthiest colony and a major contributor to its economy. It was a major producer of sugar, cotton, and indigo globally, producing about 40 percent of the sugar and 60 percent of the coffee imported to Europe. While Quebec’s main economic focus was fur, Saint-Domingue was known for its plantations, which relied heavily on the forced labor of enslaved Africans."
+                },
+                algeria: {
+                    title: "Algeria",
+                    text: "Algeria was extremely vital to France, so much that it was considered an extension of France rather than just a colony. Algeria was home to a huge part of the French population and seen as France’s national pride. It supplied France agricultural products like cotton and wine as well as valuable mineral resources. It was also at a strategic location that allowed France to maintain a strong naval presence and military power across the Mediterranean region as well as act as a bridge between France and North and West Africa."
+                }
+            };
+
+            // Set the first tab and content as active initially
+            tabs[0].classList.add('bg-gray-700');
+            tabContents[0].classList.add('active');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    
+                    const tabId = event.target.dataset.tab;
+                    
+                    // Hide other top-level pages
+                    mainContent.classList.add('active');
+                    checkoutPage.classList.remove('active');
+                    confirmationPage.classList.remove('active');
+
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('bg-gray-700'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    // Add active class to the clicked tab and corresponding content
+                    event.target.classList.add('bg-gray-700');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            // Function to update the cart UI
+            function updateCart() {
+                cartContainer.innerHTML = '';
+                let total = 0;
+
+                if (selectedTickets.length === 0) {
+                    emptyCartMessage.style.display = 'block';
+                    checkoutButton.disabled = true;
+                } else {
+                    emptyCartMessage.style.display = 'none';
+                    checkoutButton.disabled = false;
+                    
+                    selectedTickets.forEach(ticket => {
+                        const ticketItem = document.createElement('div');
+                        ticketItem.classList.add('flex', 'justify-between', 'items-center', 'py-1');
+                        ticketItem.innerHTML = `
+                            <span>Seat ${ticket.number} (${ticket.section})</span>
+                            <span class="font-bold">$${ticket.price}</span>
+                        `;
+                        cartContainer.appendChild(ticketItem);
+                        total += ticket.price;
+                    });
+                }
+                totalPriceElement.textContent = `$${total}`;
+            }
+
+            // Function to generate the seating chart
+            function generateSeatingChart() {
+                // Clear any existing seats
+                vipBox.innerHTML = '';
+                seatingChart.innerHTML = '';
+
+                // Define seating sections with their seat counts
+                const sections = {
+                    vip: { rows: 1, seats: 4, label: 'VIP Box', type: 'vip' },
+                    frontRow: { rows: 2, seats: 8, label: 'Front Row', type: 'frontRow' },
+                    general: { rows: 3, seats: 14, label: 'General Admission', type: 'general' },
+                    nosebleeds: { rows: 4, seats: 20, label: 'Nosebleeds', type: 'nosebleeds' }
+                };
+
+                let currentSeatNumber = 1;
+
+                // Generate VIP seats separately
+                for (let j = 0; j < sections.vip.seats; j++) {
+                    const seat = document.createElement('div');
+                    seat.classList.add('seat', seatInfo.vip.color);
+                    seat.textContent = currentSeatNumber;
+                    seat.setAttribute('data-section', sections.vip.type);
+                    seat.setAttribute('data-seat-number', currentSeatNumber);
+                    vipBox.appendChild(seat);
+                    currentSeatNumber++;
+                }
+
+                // Generate other sections
+                const nonVipSections = ['frontRow', 'general', 'nosebleeds'];
+                for (const section of nonVipSections) {
+                    const sectionData = sections[section];
+                    
+                    // Create a container for each section
+                    const sectionContainer = document.createElement('div');
+                    sectionContainer.classList.add('flex', 'flex-col', 'items-center', 'space-y-2');
+                    sectionContainer.setAttribute('data-section', sectionData.type);
+                    
+                    // Add section label
+                    const label = document.createElement('div');
+                    label.classList.add('text-center', 'text-sm', 'text-gray-300');
+                    label.textContent = sectionData.label;
+                    sectionContainer.appendChild(label);
+
+                    for (let i = 0; i < sectionData.rows; i++) {
+                        const row = document.createElement('div');
+                        row.classList.add('flex', 'space-x-1', 'justify-center');
+
+                        for (let j = 0; j < sectionData.seats; j++) {
+                            const seat = document.createElement('div');
+                            seat.classList.add('seat', seatInfo[sectionData.type].color);
+                            seat.textContent = currentSeatNumber;
+                            seat.setAttribute('data-section', sectionData.type);
+                            seat.setAttribute('data-seat-number', currentSeatNumber);
+                            row.appendChild(seat);
+                            currentSeatNumber++;
+                        }
+                        sectionContainer.appendChild(row);
+                    }
+                    seatingChart.appendChild(sectionContainer);
+                }
+
+                // Add event listeners to all seats for the hover effect and click functionality
+                const seats = document.querySelectorAll('.seat');
+                seats.forEach(seat => {
+                    seat.addEventListener('mouseenter', (event) => {
+                        const sectionType = event.target.getAttribute('data-section');
+                        const explanation = seatInfo[sectionType].explanation;
+                        tooltip.textContent = explanation;
+                        
+                        // Position the tooltip
+                        const seatRect = event.target.getBoundingClientRect();
+                        tooltip.style.top = `${seatRect.top + window.scrollY + seatRect.height + 10}px`;
+                        tooltip.style.left = `${seatRect.left + window.scrollX}px`;
+                        
+                        tooltip.style.display = 'block';
+                    });
+
+                    seat.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+
+                    seat.addEventListener('click', (event) => {
+                        const clickedSeat = event.target;
+                        const seatNumber = clickedSeat.getAttribute('data-seat-number');
+                        const sectionType = clickedSeat.getAttribute('data-section');
+                        const price = seatInfo[sectionType].price;
+
+                        const existingTicketIndex = selectedTickets.findIndex(t => t.number === seatNumber);
+
+                        if (existingTicketIndex > -1) {
+                            // Ticket is already selected, so remove it
+                            selectedTickets.splice(existingTicketIndex, 1);
+                            clickedSeat.classList.remove('selected');
+                        } else {
+                            // Ticket is not selected, so add it
+                            selectedTickets.push({ number: seatNumber, section: sectionType, price: price });
+                            clickedSeat.classList.add('selected');
+                        }
+                        updateCart();
+                    });
+                });
+            }
+
+            // Handles map location clicks
+            mapDescriptions.forEach(area => {
+                area.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const location = event.target.getAttribute('data-location');
+                    const description = locationDescriptions[location];
+                    
+                    if (description) {
+                        mapDescriptionContainer.style.display = 'block';
+                        mapDescriptionContainer.innerHTML = `
+                            <h3 class="text-2xl font-bold mb-2 text-gray-200">${description.title}</h3>
+                            <p class="text-gray-300 leading-relaxed">${description.text}</p>
+                        `;
+                    }
+                });
+            });
+
+            // Handles transition to checkout page
+            checkoutButton.addEventListener('click', () => {
+                mainContent.classList.remove('active');
+                checkoutPage.classList.add('active');
+                updateCheckoutSummary();
+            });
+
+            // Handles form submission (fake payment)
+            paymentForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                // Simple validation to ensure fields are not empty
+                const cardNumber = document.getElementById('card-number').value;
+                const expiration = document.getElementById('expiration').value;
+                const cvv = document.getElementById('cvv').value;
+
+                if (cardNumber && expiration && cvv) {
+                    checkoutPage.classList.remove('active');
+                    confirmationPage.classList.add('active');
+                } else {
+                    alert('Please fill out all payment details.');
+                }
+            });
+
+            // Handles back to home button on confirmation page
+            backToHomeButton.addEventListener('click', () => {
+                confirmationPage.classList.remove('active');
+                mainContent.classList.add('active');
+                document.getElementById('home').classList.add('active');
+                selectedTickets = [];
+                updateCart();
+                // Reset seats and tab active state
+                document.querySelectorAll('.seat.selected').forEach(seat => seat.classList.remove('selected'));
+                tabs.forEach(t => t.classList.remove('bg-gray-700'));
+                tabs[0].classList.add('bg-gray-700');
+            });
+
+            function updateCheckoutSummary() {
+                checkoutSummary.innerHTML = '';
+                if (selectedTickets.length === 0) {
+                    checkoutSummary.innerHTML = '<p>No tickets in your cart.</p>';
+                } else {
+                    selectedTickets.forEach(ticket => {
+                        const summaryItem = document.createElement('div');
+                        summaryItem.classList.add('flex', 'justify-between', 'items-center');
+                        summaryItem.innerHTML = `
+                            <span>Seat ${ticket.number} (${ticket.section})</span>
+                            <span class="font-bold">$${ticket.price}</span>
+                        `;
+                        checkoutSummary.appendChild(summaryItem);
+                    });
+                    
+                    const total = selectedTickets.reduce((sum, ticket) => sum + ticket.price, 0);
+                    const totalEl = document.createElement('div');
+                    totalEl.classList.add('flex', 'justify-between', 'items-center', 'font-bold', 'mt-2', 'pt-2', 'border-t', 'border-gray-600');
+                    totalEl.innerHTML = `<span>Total:</span><span>$${total}</span>`;
+                    checkoutSummary.appendChild(totalEl);
+                }
+            }
+
+            // Generate the seating chart and update the cart when the page loads
+            generateSeatingChart();
+            updateCart();
+        });
+    </script>
+</body>
+</html>
